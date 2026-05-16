@@ -112,8 +112,8 @@ def upstox_login() -> dict[str, str]:
     return {"url": url}
 
 
-@app.get("/callback")
-def upstox_callback(code: str) -> RedirectResponse | dict[str, str]:
+@app.get("/callback", response_model=None)
+def upstox_callback(code: str):
     creds = _upstox_creds()
     missing = [key for key in ("api_key", "api_secret", "redirect_uri") if not creds[key]]
     if missing:
