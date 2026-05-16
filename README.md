@@ -41,7 +41,12 @@ $env:PYTHONPATH = "src"
 python examples/run_backtest.py
 ```
 
-The example writes an interactive dashboard to `artifacts/dashboard.html`.
+The example writes:
+
+- interactive dashboard: `artifacts/dashboard.html`
+- Excel workbook: `artifacts/ichimoku_backtest_<timestamp>.xlsx`
+
+The workbook includes summary, Pine-exact trades, realistic trades, daily PnL, monthly returns, equity curves, and the config snapshot used for the run.
 By default it fetches real `15min` candles from Upstox V3 using the configured instrument and date range. Set `data.source: "csv"` to use the local CSV fallback instead.
 
 ## Upstox integration

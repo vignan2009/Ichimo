@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+from datetime import datetime
 
 from ichimoku_framework.analytics.dashboard import build_dashboard
 from ichimoku_framework.analytics.performance import summarize
+from ichimoku_framework.analytics.reporting import export_excel_report
 from ichimoku_framework.backtest.engine import BacktestEngine
 from ichimoku_framework.backtest.realistic import RealisticBacktestEngine
 from ichimoku_framework.config.models import AppConfig
@@ -24,11 +26,23 @@ def main() -> None:
     else:
         candles = load_ohlc_csv(config.data.csv_path)
     result = BacktestEngine(config.strategy, config.backtest).run(candles)
-    print(summarize(result.trades, result.equity_curve))
+    pine_summary = summarize(result.trades, result.equity_curve)
+    print(pine_summary)
     Path("artifacts").mkdir(exist_ok=True)
     build_dashboard(result.candles, result.trades, result.equity_curve).write_html("artifacts/dashboard.html")
     realistic = RealisticBacktestEngine(config.strategy, config.backtest).run(candles)
-    print(summarize(realistic.trades, realistic.equity_curve))
+    realistic_summary = summarize(realistic.trades, realistic.equity_curve)
+    print(realistic_summary)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    report_path = export_excel_report(
+        Path("artifacts") / f"ichimoku_backtest_{timestamp}.xlsx",
+        config,
+        result,
+        realistic,
+        pine_summary,
+        realistic_summary,
+    )
+    print(f"Excel report written to {report_path}")
 
 
 if __name__ == "__main__":
