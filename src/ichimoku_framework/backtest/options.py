@@ -110,7 +110,7 @@ class OvernightOptionBacktestEngine(BacktestEngine):
                     premium_exit=float(premium_row["close"]),
                     state=state,
                     bars_in_trade=bars_in_trade,
-                    reason=ExitReason.END_OF_DAY,
+                    reason=ExitReason.END_OF_BACKTEST,
                     exit_basis="end_of_backtest",
                 )
 
@@ -163,8 +163,8 @@ class OvernightOptionBacktestEngine(BacktestEngine):
         premium_row = self._premium_row(position, timestamp)
         if premium_row is None:
             return
-        if position.expiry is not None and timestamp.date() >= position.expiry.date():
-            self._close_position(timestamp, underlying_row, float(premium_row["close"]), state, bars_in_trade, ExitReason.END_OF_DAY, "contract_expiry")
+        if self._is_contract_expiry_bar(position, timestamp):
+            self._close_position(timestamp, underlying_row, float(premium_row["close"]), state, bars_in_trade, ExitReason.CONTRACT_EXPIRY, "contract_expiry")
             return
         hit_stop = position.stop_loss is not None and float(premium_row["low"]) <= position.stop_loss
         hit_target = position.take_profit is not None and float(premium_row["high"]) >= position.take_profit
@@ -255,6 +255,21 @@ class OvernightOptionBacktestEngine(BacktestEngine):
             trading_symbol=position.trading_symbol,
         )
         return self._premium_row_for_contract(contract, timestamp)
+
+    def _is_contract_expiry_bar(self, position: Position, timestamp: pd.Timestamp) -> bool:
+        if position.instrument_key is None or position.expiry is None or timestamp.date() != position.expiry.date():
+            return False
+        contract = OptionContract(
+            instrument_key=position.instrument_key,
+            expiry=position.expiry.date(),
+            strike_price=float(position.strike_price or 0.0),
+            option_type=str(position.option_type),
+            lot_size=max(position.quantity // max(self.app_config.options.lots, 1), 1),
+            trading_symbol=position.trading_symbol,
+        )
+        premium = self._premium_frame(contract)
+        same_day = premium[premium.index.date == position.expiry.date()]
+        return not same_day.empty and timestamp == same_day.index.max()
 
     def _premium_frame(self, contract: OptionContract) -> pd.DataFrame:
         if contract.instrument_key not in self._premium_by_contract:

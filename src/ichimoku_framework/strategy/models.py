@@ -15,6 +15,8 @@ class ExitReason(str, Enum):
     TAKE_PROFIT = "take_profit"
     CLOSE_SIGNAL = "close_signal"
     END_OF_DAY = "end_of_day"
+    CONTRACT_EXPIRY = "contract_expiry"
+    END_OF_BACKTEST = "end_of_backtest"
 
 
 @dataclass(slots=True)

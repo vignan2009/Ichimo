@@ -11,6 +11,8 @@ from ichimoku_framework.backtest.engine import BacktestResult
 from ichimoku_framework.config.models import AppConfig
 from ichimoku_framework.strategy.models import Trade
 
+REPORT_TIMEZONE = "Asia/Kolkata"
+
 
 def trades_to_frame(trades: list[Trade], mode: str) -> pd.DataFrame:
     """Convert trade objects into a flat ledger suitable for export."""
@@ -84,12 +86,12 @@ def monthly_returns_frame(equity: pd.DataFrame) -> pd.DataFrame:
 
 
 def excel_safe_frame(frame: pd.DataFrame) -> pd.DataFrame:
-    """Return a copy with timezone-aware datetime values made Excel-compatible."""
+    """Return an Excel-compatible copy with timezone-aware values shown in IST."""
     safe = frame.copy()
     for column in safe.columns:
         series = safe[column]
         if isinstance(series.dtype, pd.DatetimeTZDtype):
-            safe[column] = series.dt.tz_convert(None)
+            safe[column] = series.dt.tz_convert(REPORT_TIMEZONE).dt.tz_localize(None)
         elif series.dtype == "object":
             safe[column] = series.map(_excel_safe_value)
     return safe
@@ -97,9 +99,9 @@ def excel_safe_frame(frame: pd.DataFrame) -> pd.DataFrame:
 
 def _excel_safe_value(value: Any) -> Any:
     if isinstance(value, pd.Timestamp) and value.tzinfo is not None:
-        return value.tz_convert(None)
+        return value.tz_convert(REPORT_TIMEZONE).tz_localize(None)
     if hasattr(value, "tzinfo") and getattr(value, "tzinfo", None) is not None:
-        return pd.Timestamp(value).tz_convert(None).to_pydatetime()
+        return pd.Timestamp(value).tz_convert(REPORT_TIMEZONE).tz_localize(None).to_pydatetime()
     return value
 
 

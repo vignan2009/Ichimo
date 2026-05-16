@@ -135,3 +135,51 @@ def test_overnight_option_backtest_turns_bearish_signal_into_pe_trade(monkeypatc
     assert trade.instrument_key == "pe-24000"
     assert trade.reason == ExitReason.CLOSE_SIGNAL
     assert trade.quantity == 75
+
+
+def test_overnight_option_backtest_marks_contract_expiry_separately(monkeypatch) -> None:
+    config = AppConfig(
+        strategy=StrategyConfig(stop_loss_percent=None, take_profit_percent=None),
+        data=DataConfig(from_date="2026-04-13", to_date="2026-04-16"),
+    )
+    engine = OvernightOptionBacktestEngine(config, _FakeClient())
+    index = pd.DatetimeIndex(
+        [
+            pd.Timestamp("2026-04-15 09:15"),
+            pd.Timestamp("2026-04-16 09:15"),
+            pd.Timestamp("2026-04-16 15:15"),
+        ]
+    )
+    prepared = pd.DataFrame(
+        {
+            "open": [23992.0, 24001.0, 24010.0],
+            "high": [24000.0, 24010.0, 24020.0],
+            "low": [23980.0, 23990.0, 24000.0],
+            "close": [23995.0, 24005.0, 24015.0],
+            "entry_bullish_class": ["strong", pd.NA, pd.NA],
+            "entry_bearish_class": [pd.NA, pd.NA, pd.NA],
+            "close_bullish_class": [pd.NA, pd.NA, pd.NA],
+            "close_bearish_class": [pd.NA, pd.NA, pd.NA],
+        },
+        index=index,
+    )
+    premium = pd.DataFrame(
+        {
+            "open": [100.0, 104.0, 106.0],
+            "high": [101.0, 105.0, 107.0],
+            "low": [99.0, 103.0, 105.0],
+            "close": [100.5, 104.5, 106.5],
+        },
+        index=index,
+    )
+    monkeypatch.setattr(engine, "prepare", lambda candles: prepared)
+    monkeypatch.setattr(
+        "ichimoku_framework.backtest.options.load_expired_upstox_ohlc",
+        lambda client, expired_instrument_key, timeframe, from_date, to_date: premium,
+    )
+
+    result = engine.run(prepared)
+
+    assert len(result.trades) == 1
+    assert result.trades[0].reason == ExitReason.CONTRACT_EXPIRY
+    assert result.trades[0].exit_time == pd.Timestamp("2026-04-16 15:15").to_pydatetime()

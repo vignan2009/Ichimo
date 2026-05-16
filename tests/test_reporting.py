@@ -37,7 +37,8 @@ def test_monthly_returns_frame_handles_two_months() -> None:
     assert round(frame.loc[0, "realistic_return"], 4) == -0.1
 
 
-def test_excel_safe_frame_removes_timezone_awareness() -> None:
+def test_excel_safe_frame_converts_timezone_aware_values_to_ist() -> None:
     frame = pd.DataFrame({"timestamp": pd.to_datetime(["2024-01-01 09:15"], utc=True)})
     safe = excel_safe_frame(frame)
     assert safe["timestamp"].dt.tz is None
+    assert safe.loc[0, "timestamp"] == pd.Timestamp("2024-01-01 14:45")
