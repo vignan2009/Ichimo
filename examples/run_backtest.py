@@ -7,12 +7,22 @@ from ichimoku_framework.analytics.performance import summarize
 from ichimoku_framework.backtest.engine import BacktestEngine
 from ichimoku_framework.backtest.realistic import RealisticBacktestEngine
 from ichimoku_framework.config.models import AppConfig
-from ichimoku_framework.data.loaders import load_ohlc_csv
+from ichimoku_framework.data.loaders import load_ohlc_csv, load_upstox_ohlc
+from ichimoku_framework.execution.upstox_client import UpstoxClient
 
 
 def main() -> None:
     config = AppConfig.from_yaml("config/example_strategy.yaml")
-    candles = load_ohlc_csv("sample_data/nifty_sample.csv")
+    if config.data.source == "upstox":
+        candles = load_upstox_ohlc(
+            UpstoxClient(config.upstox),
+            instrument_key=config.data.instrument_key,
+            timeframe=config.data.timeframe,
+            from_date=config.data.from_date,
+            to_date=config.data.to_date,
+        )
+    else:
+        candles = load_ohlc_csv(config.data.csv_path)
     result = BacktestEngine(config.strategy, config.backtest).run(candles)
     print(summarize(result.trades, result.equity_curve))
     Path("artifacts").mkdir(exist_ok=True)

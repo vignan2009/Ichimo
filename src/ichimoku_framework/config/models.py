@@ -77,11 +77,21 @@ class UpstoxConfig(BaseModel):
     timeout_seconds: int = 10
 
 
+class DataConfig(BaseModel):
+    source: Literal["upstox", "csv"] = "upstox"
+    instrument_key: str = "NSE_INDEX|Nifty 50"
+    timeframe: str = "15min"
+    from_date: str = "2026-04-01"
+    to_date: str = "2026-04-30"
+    csv_path: str = "sample_data/nifty_sample.csv"
+
+
 class AppConfig(BaseModel):
     strategy: StrategyConfig = Field(default_factory=StrategyConfig)
     backtest: BacktestConfig = Field(default_factory=BacktestConfig)
     options: OptionsConfig = Field(default_factory=OptionsConfig)
     upstox: UpstoxConfig = Field(default_factory=UpstoxConfig)
+    data: DataConfig = Field(default_factory=DataConfig)
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> "AppConfig":

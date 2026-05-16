@@ -42,6 +42,7 @@ python examples/run_backtest.py
 ```
 
 The example writes an interactive dashboard to `artifacts/dashboard.html`.
+By default it fetches real `15min` candles from Upstox V3 using the configured instrument and date range. Set `data.source: "csv"` to use the local CSV fallback instead.
 
 ## Upstox integration
 

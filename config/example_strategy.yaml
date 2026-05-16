@@ -50,3 +50,11 @@ upstox:
   base_url: "https://api.upstox.com"
   hft_base_url: "https://api-hft.upstox.com"
   timeout_seconds: 10
+
+data:
+  source: "upstox"
+  instrument_key: "NSE_INDEX|Nifty 50"
+  timeframe: "15min"
+  from_date: "2026-04-01"
+  to_date: "2026-04-30"
+  csv_path: "sample_data/nifty_sample.csv"

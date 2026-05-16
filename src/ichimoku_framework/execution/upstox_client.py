@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import quote
 
 import requests
 from dotenv import load_dotenv
@@ -31,9 +32,17 @@ class UpstoxClient:
     def headers(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self.access_token}", "Accept": "application/json"}
 
-    def historical_candles(self, instrument_key: str, interval: str, to_date: str, from_date: str | None = None) -> dict[str, Any]:
+    def historical_candles_v3(
+        self,
+        instrument_key: str,
+        unit: str,
+        interval: str,
+        to_date: str,
+        from_date: str | None = None,
+    ) -> dict[str, Any]:
         suffix = f"/{from_date}" if from_date else ""
-        url = f"{self.config.base_url}/v2/historical-candle/{instrument_key}/{interval}/{to_date}{suffix}"
+        encoded_key = quote(instrument_key, safe="")
+        url = f"{self.config.base_url}/v3/historical-candle/{encoded_key}/{unit}/{interval}/{to_date}{suffix}"
         logger.info("Fetching historical candles for {}", instrument_key)
         response = requests.get(url, headers=self.headers, timeout=self.config.timeout_seconds)
         response.raise_for_status()
