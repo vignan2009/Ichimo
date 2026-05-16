@@ -1,0 +1,47 @@
+strategy:
+  start_datetime: "2023-01-01T00:00:00"
+  end_datetime: "2030-01-01T00:00:00"
+  entry_tenkan_period: 9
+  entry_kijun_period: 26
+  entry_senkou_b_period: 52
+  entry_displacement: 26
+  close_tenkan_period: 9
+  close_kijun_period: 26
+  close_senkou_b_period: 52
+  close_displacement: 26
+  enabled_entry_bullish_classes: ["strong"]
+  enabled_entry_bearish_classes: ["strong"]
+  enabled_close_bullish_classes: ["strong"]
+  enabled_close_bearish_classes: ["strong"]
+  entry_condition_mode: "ANY"
+  close_condition_mode: "ANY"
+  stop_loss_percent: -2.0
+  take_profit_percent: 5.0
+  atr_period: 14
+  atr_stop_multiplier: null
+  atr_take_profit_multiplier: null
+  max_daily_loss: 5000.0
+  max_concurrent_trades: 1
+  session_start: "00:00"
+  session_end: "23:59:59"
+  timezone: "Asia/Kolkata"
+
+backtest:
+  initial_capital: 100000.0
+  quantity: 50
+  commission_per_order: 20.0
+  slippage_bps: 2.0
+  intrabar_policy: "worst_case"
+
+options:
+  enabled: false
+  underlying: "NIFTY"
+  strike_step: 50
+  expiry_policy: "nearest"
+  slippage_bps: 5.0
+
+upstox:
+  access_token_env: "UPSTOX_ACCESS_TOKEN"
+  base_url: "https://api.upstox.com"
+  hft_base_url: "https://api-hft.upstox.com"
+  timeout_seconds: 10

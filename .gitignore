@@ -1,0 +1,9 @@
+.env
+**/.env
+nifty/
+__pycache__/
+*.pyc
+artifacts/
+*.log
+reports/
+state_*.json
