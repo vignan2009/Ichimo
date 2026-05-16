@@ -122,6 +122,22 @@ python examples/run_backtest.py
 
 Create `.env` manually on the VPS before running.
 
+## Research Console
+
+The workspace now includes a small local dashboard for managing Upstox access and browsing generated artifacts.
+
+```bash
+uvicorn ichimoku_framework.web.app:app --host 0.0.0.0 --port 8000
+```
+
+Open the dashboard in a browser, then use:
+
+- `Upstox Login` to complete the auth flow and persist the refreshed token into `.env`
+- the manual token field when you already have a fresh token copied from elsewhere
+- the artifacts panel to open generated Excel reports and `dashboard.html`
+
+The dashboard is an operator console for the research workflow; it does not place live trades.
+
 ## Environment
 
 The root `.env` is intentionally ignored by Git. Expected variables:

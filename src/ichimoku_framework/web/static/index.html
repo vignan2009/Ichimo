@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ichimoku Console</title>
+    <style>
+        :root {
+            --bg: #0a0d12;
+            --surface: #121821;
+            --surface-2: #18212c;
+            --line: #293341;
+            --text: #edf2f7;
+            --muted: #96a3b5;
+            --accent: #4ea1ff;
+            --success: #21c58b;
+            --warning: #f5b942;
+            --danger: #ef6670;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+        .shell {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: 100vh;
+        }
+        aside {
+            border-right: 1px solid var(--line);
+            padding: 24px 18px;
+            background: #0d1218;
+        }
+        .brand {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 28px;
+        }
+        .nav {
+            display: grid;
+            gap: 8px;
+        }
+        .nav div {
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: var(--muted);
+        }
+        .nav .active {
+            color: var(--text);
+            background: var(--surface);
+        }
+        main {
+            padding: 24px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 16px;
+        }
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 18px;
+        }
+        .span-5 { grid-column: span 5; }
+        .span-7 { grid-column: span 7; }
+        .span-12 { grid-column: span 12; }
+        .eyebrow {
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        .status {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--danger);
+        }
+        .dot.connected { background: var(--success); }
+        .muted { color: var(--muted); }
+        .kv {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 10px;
+            font-size: 14px;
+            margin-top: 12px;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+        button, a.button {
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 10px 12px;
+            background: var(--surface-2);
+            color: var(--text);
+            text-decoration: none;
+            cursor: pointer;
+        }
+        button.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #08111d;
+            font-weight: 700;
+        }
+        input {
+            width: 100%;
+            margin-top: 12px;
+            padding: 11px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--line);
+            background: #0d1218;
+            color: var(--text);
+        }
+        .artifact {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            align-items: center;
+            border-top: 1px solid var(--line);
+            padding: 14px 0;
+        }
+        .artifact:first-child { border-top: 0; padding-top: 0; }
+        .notice {
+            margin-top: 12px;
+            color: var(--warning);
+            min-height: 18px;
+        }
+        @media (max-width: 900px) {
+            .shell { grid-template-columns: 1fr; }
+            aside { border-right: 0; border-bottom: 1px solid var(--line); }
+            .span-5, .span-7, .span-12 { grid-column: span 12; }
+            .kv { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <aside>
+            <div class="brand">Ichimoku Console</div>
+            <div class="nav">
+                <div class="active">Research</div>
+                <div>Upstox</div>
+                <div>Artifacts</div>
+            </div>
+        </aside>
+        <main>
+            <header>
+                <div>
+                    <div class="eyebrow">Research Workspace</div>
+                    <h1>Backtest Operations</h1>
+                </div>
+                <button id="refresh-btn">Refresh</button>
+            </header>
+            <div class="grid">
+                <section class="panel span-5">
+                    <div class="eyebrow">Upstox Access</div>
+                    <div class="status">
+                        <div id="status-dot" class="dot"></div>
+                        <strong id="status-text">Checking...</strong>
+                    </div>
+                    <div class="kv">
+                        <span class="muted">Token</span><span id="token-value">-</span>
+                        <span class="muted">API key</span><span id="api-key-value">-</span>
+                        <span class="muted">Redirect URI</span><span id="redirect-value">-</span>
+                    </div>
+                    <div class="actions">
+                        <button class="primary" id="login-btn">Upstox Login</button>
+                        <button id="logout-btn">Disconnect</button>
+                    </div>
+                    <input id="token-input" placeholder="Paste a fresh access token">
+                    <div class="actions">
+                        <button id="save-token-btn">Save Token</button>
+                    </div>
+                    <div id="notice" class="notice"></div>
+                </section>
+
+                <section class="panel span-7">
+                    <div class="eyebrow">Active Backtest Config</div>
+                    <div class="kv">
+                        <span class="muted">Instrument</span><span id="instrument-value">-</span>
+                        <span class="muted">Window</span><span id="window-value">-</span>
+                        <span class="muted">Timeframe</span><span id="timeframe-value">-</span>
+                        <span class="muted">Options</span><span id="options-value">-</span>
+                        <span class="muted">Risk</span><span id="risk-value">-</span>
+                    </div>
+                </section>
+
+                <section class="panel span-12">
+                    <div class="eyebrow">Artifacts</div>
+                    <div id="artifacts-list" class="muted">Loading artifacts...</div>
+                </section>
+            </div>
+        </main>
+    </div>
+    <script>
+        const notice = document.getElementById('notice');
+
+        async function request(url, options = {}) {
+            const response = await fetch(url, options);
+            let body = null;
+            try { body = await response.json(); } catch (_) {}
+            if (!response.ok) {
+                throw new Error((body && body.detail) || `Request failed (${response.status})`);
+            }
+            return body;
+        }
+
+        function say(message) {
+            notice.textContent = message || '';
+        }
+
+        async function loadStatus() {
+            const data = await request('/api/status');
+            document.getElementById('status-dot').className = `dot ${data.connected ? 'connected' : ''}`;
+            document.getElementById('status-text').textContent = data.connected ? 'Connected' : 'Disconnected';
+            document.getElementById('token-value').textContent = data.masked_token || 'Not set';
+            document.getElementById('api-key-value').textContent = data.api_key_configured ? 'Configured' : 'Missing';
+            document.getElementById('redirect-value').textContent = data.redirect_uri || '-';
+            document.getElementById('instrument-value').textContent = data.config.instrument_key;
+            document.getElementById('window-value').textContent = `${data.config.from_date} to ${data.config.to_date}`;
+            document.getElementById('timeframe-value').textContent = data.config.timeframe;
+            document.getElementById('options-value').textContent = data.config.options_enabled
+                ? `${data.config.underlying}, overnight ${data.config.allow_overnight ? 'on' : 'off'}`
+                : 'disabled';
+            document.getElementById('risk-value').textContent =
+                `${data.config.stop_loss_percent}% SL / ${data.config.take_profit_percent}% TP`;
+        }
+
+        async function loadArtifacts() {
+            const artifacts = await request('/api/artifacts');
+            const root = document.getElementById('artifacts-list');
+            if (!artifacts.length) {
+                root.textContent = 'No generated artifacts yet.';
+                return;
+            }
+            root.innerHTML = artifacts.map(item => `
+                <div class="artifact">
+                    <div>
+                        <div>${item.name}</div>
+                        <div class="muted">${item.modified} | ${item.size}</div>
+                    </div>
+                    <a class="button" href="${item.url}">Open</a>
+                </div>
+            `).join('');
+        }
+
+        async function refresh() {
+            try {
+                await Promise.all([loadStatus(), loadArtifacts()]);
+            } catch (error) {
+                say(error.message);
+            }
+        }
+
+        document.getElementById('refresh-btn').onclick = refresh;
+        document.getElementById('login-btn').onclick = async () => {
+            try {
+                const data = await request('/api/upstox-login');
+                window.open(data.url, '_blank');
+            } catch (error) {
+                say(error.message);
+            }
+        };
+        document.getElementById('save-token-btn').onclick = async () => {
+            try {
+                const accessToken = document.getElementById('token-input').value;
+                await request('/api/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ access_token: accessToken })
+                });
+                document.getElementById('token-input').value = '';
+                say('Token saved to .env.');
+                await loadStatus();
+            } catch (error) {
+                say(error.message);
+            }
+        };
+        document.getElementById('logout-btn').onclick = async () => {
+            try {
+                await request('/api/logout', { method: 'POST' });
+                say('Token cleared from .env.');
+                await loadStatus();
+            } catch (error) {
+                say(error.message);
+            }
+        };
+        refresh();
+    </script>
+</body>
+</html>
