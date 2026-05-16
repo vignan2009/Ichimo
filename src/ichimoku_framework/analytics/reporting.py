@@ -21,7 +21,7 @@ def trades_to_frame(trades: list[Trade], mode: str) -> pd.DataFrame:
         row["side"] = trade.side.value
         row["reason"] = trade.reason.value
         rows.append(row)
-    return pd.DataFrame(rows)
+    return excel_safe_frame(pd.DataFrame(rows))
 
 
 def summary_to_frame(pine_summary: PerformanceSummary, realistic_summary: PerformanceSummary) -> pd.DataFrame:
@@ -38,13 +38,14 @@ def summary_to_frame(pine_summary: PerformanceSummary, realistic_summary: Perfor
 
 def equity_to_frame(pine_result: BacktestResult, realistic_result: BacktestResult) -> pd.DataFrame:
     """Align both equity curves by timestamp for export."""
-    return pd.concat(
+    frame = pd.concat(
         [
             pine_result.equity_curve.rename("pine_exact_equity"),
             realistic_result.equity_curve.rename("realistic_equity"),
         ],
         axis=1,
     ).reset_index(names="timestamp")
+    return excel_safe_frame(frame)
 
 
 def daily_pnl_frame(trades: pd.DataFrame) -> pd.DataFrame:
@@ -70,6 +71,26 @@ def monthly_returns_frame(equity: pd.DataFrame) -> pd.DataFrame:
         }
     )
     return monthly.reset_index(names="month")
+
+
+def excel_safe_frame(frame: pd.DataFrame) -> pd.DataFrame:
+    """Return a copy with timezone-aware datetime values made Excel-compatible."""
+    safe = frame.copy()
+    for column in safe.columns:
+        series = safe[column]
+        if isinstance(series.dtype, pd.DatetimeTZDtype):
+            safe[column] = series.dt.tz_convert(None)
+        elif series.dtype == "object":
+            safe[column] = series.map(_excel_safe_value)
+    return safe
+
+
+def _excel_safe_value(value: Any) -> Any:
+    if isinstance(value, pd.Timestamp) and value.tzinfo is not None:
+        return value.tz_convert(None)
+    if hasattr(value, "tzinfo") and getattr(value, "tzinfo", None) is not None:
+        return pd.Timestamp(value).tz_convert(None).to_pydatetime()
+    return value
 
 
 def config_to_frame(config: AppConfig) -> pd.DataFrame:
@@ -105,12 +126,12 @@ def export_excel_report(
     equity = equity_to_frame(pine_result, realistic_result)
 
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        summary_to_frame(pine_summary, realistic_summary).to_excel(writer, sheet_name="Summary", index=False)
-        pine_trades.to_excel(writer, sheet_name="Trades_PineExact", index=False)
-        realistic_trades.to_excel(writer, sheet_name="Trades_Realistic", index=False)
-        daily_pnl_frame(all_trades).to_excel(writer, sheet_name="Daily_PnL", index=False)
-        monthly_returns_frame(equity).to_excel(writer, sheet_name="Monthly_Returns", index=False)
-        equity.to_excel(writer, sheet_name="Equity_Curves", index=False)
-        config_to_frame(config).to_excel(writer, sheet_name="Config", index=False)
+        excel_safe_frame(summary_to_frame(pine_summary, realistic_summary)).to_excel(writer, sheet_name="Summary", index=False)
+        excel_safe_frame(pine_trades).to_excel(writer, sheet_name="Trades_PineExact", index=False)
+        excel_safe_frame(realistic_trades).to_excel(writer, sheet_name="Trades_Realistic", index=False)
+        excel_safe_frame(daily_pnl_frame(all_trades)).to_excel(writer, sheet_name="Daily_PnL", index=False)
+        excel_safe_frame(monthly_returns_frame(equity)).to_excel(writer, sheet_name="Monthly_Returns", index=False)
+        excel_safe_frame(equity).to_excel(writer, sheet_name="Equity_Curves", index=False)
+        excel_safe_frame(config_to_frame(config)).to_excel(writer, sheet_name="Config", index=False)
 
     return output
