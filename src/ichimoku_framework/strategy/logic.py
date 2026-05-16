@@ -16,13 +16,17 @@ def _reduce_conditions(conditions: list[bool], mode: ConditionMode) -> bool:
 
 
 def _six_signal_values(row: pd.Series, prefix: str, bullish_classes: set[str], bearish_classes: set[str]) -> tuple[bool, ...]:
+    bullish_class = row.get(f"{prefix}bullish_class")
+    bearish_class = row.get(f"{prefix}bearish_class")
+    bullish_value = None if pd.isna(bullish_class) else str(bullish_class)
+    bearish_value = None if pd.isna(bearish_class) else str(bearish_class)
     return (
-        row.get(f"{prefix}bullish_class") == "strong" and "strong" in bullish_classes,
-        row.get(f"{prefix}bullish_class") == "neutral" and "neutral" in bullish_classes,
-        row.get(f"{prefix}bullish_class") == "weak" and "weak" in bullish_classes,
-        row.get(f"{prefix}bearish_class") == "strong" and "strong" in bearish_classes,
-        row.get(f"{prefix}bearish_class") == "neutral" and "neutral" in bearish_classes,
-        row.get(f"{prefix}bearish_class") == "weak" and "weak" in bearish_classes,
+        bullish_value == "strong" and "strong" in bullish_classes,
+        bullish_value == "neutral" and "neutral" in bullish_classes,
+        bullish_value == "weak" and "weak" in bullish_classes,
+        bearish_value == "strong" and "strong" in bearish_classes,
+        bearish_value == "neutral" and "neutral" in bearish_classes,
+        bearish_value == "weak" and "weak" in bearish_classes,
     )
 
 
