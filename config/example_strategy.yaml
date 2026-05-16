@@ -32,6 +32,11 @@ backtest:
   commission_per_order: 20.0
   slippage_bps: 2.0
   intrabar_policy: "worst_case"
+  realistic_entry_delay_candles: 1
+  realistic_entry_slippage_points: 1.0
+  realistic_exit_slippage_points: 1.0
+  realistic_no_entry_after: "15:00"
+  realistic_eod_time: "15:20"
 
 options:
   enabled: false

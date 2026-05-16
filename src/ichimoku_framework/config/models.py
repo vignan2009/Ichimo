@@ -55,6 +55,11 @@ class BacktestConfig(BaseModel):
     commission_per_order: float = 0.0
     slippage_bps: float = 0.0
     intrabar_policy: Literal["worst_case"] = "worst_case"
+    realistic_entry_delay_candles: int = 1
+    realistic_entry_slippage_points: float = 1.0
+    realistic_exit_slippage_points: float = 1.0
+    realistic_no_entry_after: time = time(15, 0)
+    realistic_eod_time: time = time(15, 20)
 
 
 class OptionsConfig(BaseModel):

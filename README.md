@@ -28,6 +28,11 @@ The strategy layer now mirrors the supplied Skyrexio Pine Script semantics:
 - percentage stats use `(exit - entry) / entry * 100`
 - intrabar exit priority is `stop loss`, then `take profit`, then close signal
 
+## Backtest modes
+
+- `BacktestEngine`: Pine-exact behavior for TradingView reconciliation
+- `RealisticBacktestEngine`: delayed next-open fills, adverse point slippage, conservative same-candle handling, no-new-entry cutoff, and end-of-day flattening inspired by the reference `nifty` research engine
+
 ## Setup
 
 ```bash

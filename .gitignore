@@ -1,6 +1,5 @@
 .env
 **/.env
-nifty/
 __pycache__/
 *.pyc
 artifacts/
