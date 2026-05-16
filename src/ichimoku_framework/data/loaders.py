@@ -52,3 +52,47 @@ def load_upstox_ohlc(
     numeric_columns = ["open", "high", "low", "close", "volume", "open_interest"]
     frame[numeric_columns] = frame[numeric_columns].apply(pd.to_numeric, errors="coerce")
     return frame.set_index("timestamp").sort_index()
+
+
+def expired_interval_for_timeframe(timeframe: str) -> str:
+    """Translate project timeframe aliases to expired-instrument API intervals."""
+    normalized = timeframe.strip().lower()
+    mapping = {
+        "1min": "1minute",
+        "3min": "3minute",
+        "5min": "5minute",
+        "15min": "15minute",
+        "30min": "30minute",
+        "1d": "day",
+    }
+    if normalized not in mapping:
+        raise ValueError(f"Unsupported expired-instrument timeframe: {timeframe}")
+    return mapping[normalized]
+
+
+def candles_payload_to_frame(candles: list[list[object]]) -> pd.DataFrame:
+    """Normalize Upstox candle arrays into a sorted OHLC frame."""
+    if not candles:
+        return pd.DataFrame(columns=["open", "high", "low", "close", "volume", "open_interest"])
+    frame = pd.DataFrame(candles, columns=["timestamp", "open", "high", "low", "close", "volume", "open_interest"])
+    frame["timestamp"] = pd.to_datetime(frame["timestamp"])
+    numeric_columns = ["open", "high", "low", "close", "volume", "open_interest"]
+    frame[numeric_columns] = frame[numeric_columns].apply(pd.to_numeric, errors="coerce")
+    return frame.set_index("timestamp").sort_index()
+
+
+def load_expired_upstox_ohlc(
+    client: UpstoxClient,
+    expired_instrument_key: str,
+    timeframe: str,
+    from_date: str,
+    to_date: str,
+) -> pd.DataFrame:
+    """Fetch expired option/future candles from Upstox and return OHLC data."""
+    payload = client.expired_historical_candles(
+        expired_instrument_key=expired_instrument_key,
+        interval=expired_interval_for_timeframe(timeframe),
+        to_date=to_date,
+        from_date=from_date,
+    )
+    return candles_payload_to_frame(payload.get("data", {}).get("candles", []))

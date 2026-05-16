@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from typing import Iterable
 
 
@@ -11,7 +11,9 @@ class OptionContract:
     expiry: date
     strike_price: float
     option_type: str
-    premium: float
+    premium: float | None = None
+    lot_size: int = 1
+    trading_symbol: str | None = None
 
 
 def nearest_atm_contract(contracts: Iterable[OptionContract], spot_price: float, bullish: bool, expiry: date) -> OptionContract:
@@ -25,4 +27,21 @@ def nearest_atm_contract(contracts: Iterable[OptionContract], spot_price: float,
 def premium_fill_price(premium: float, bullish: bool, slippage_bps: float) -> float:
     """Apply adverse slippage to option premium execution."""
     factor = slippage_bps / 10000.0
-    return premium * (1 + factor if bullish else 1 + factor)
+    return premium * (1 + factor)
+
+
+def contracts_from_payload(payload: list[dict]) -> list[OptionContract]:
+    """Normalize Upstox option-contract responses into internal models."""
+    contracts: list[OptionContract] = []
+    for item in payload:
+        contracts.append(
+            OptionContract(
+                instrument_key=str(item["instrument_key"]),
+                expiry=datetime.strptime(str(item["expiry"]), "%Y-%m-%d").date(),
+                strike_price=float(item["strike_price"]),
+                option_type=str(item["instrument_type"]),
+                lot_size=int(item.get("lot_size") or item.get("minimum_lot") or 1),
+                trading_symbol=item.get("trading_symbol"),
+            )
+        )
+    return contracts

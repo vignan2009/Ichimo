@@ -28,6 +28,12 @@ class Position:
     signal_time: datetime | None = None
     raw_entry_price: float | None = None
     entry_bar_index: int | None = None
+    instrument_key: str | None = None
+    trading_symbol: str | None = None
+    option_type: str | None = None
+    strike_price: float | None = None
+    expiry: datetime | None = None
+    underlying_entry_price: float | None = None
 
 
 @dataclass(slots=True)
@@ -47,3 +53,10 @@ class Trade:
     gross_pnl: float | None = None
     costs: float = 0.0
     exit_basis: str | None = None
+    instrument_key: str | None = None
+    trading_symbol: str | None = None
+    option_type: str | None = None
+    strike_price: float | None = None
+    expiry: datetime | None = None
+    underlying_entry_price: float | None = None
+    underlying_exit_price: float | None = None

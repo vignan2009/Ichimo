@@ -32,6 +32,7 @@ The strategy layer now mirrors the supplied Skyrexio Pine Script semantics:
 
 - `BacktestEngine`: Pine-exact behavior for TradingView reconciliation
 - `RealisticBacktestEngine`: delayed next-open fills, adverse point slippage, conservative same-candle handling, no-new-entry cutoff, and end-of-day flattening inspired by the reference `nifty` research engine
+- `OvernightOptionBacktestEngine`: directional ATM option buys, premium-based PnL, and overnight holds until close signal, stop, target, or contract expiry
 
 ## Setup
 
@@ -46,7 +47,7 @@ The example writes:
 - interactive dashboard: `artifacts/dashboard.html`
 - Excel workbook: `artifacts/ichimoku_backtest_<timestamp>.xlsx`
 
-The workbook includes summary, Pine-exact trades, realistic trades, daily PnL, monthly returns, equity curves, and the config snapshot used for the run.
+The workbook includes summary, Pine-exact trades, realistic trades, overnight-option trades when enabled, daily PnL, monthly returns, equity curves, and the config snapshot used for the run.
 By default it fetches real `15min` candles from Upstox V3 using the configured instrument and date range. Set `data.source: "csv"` to use the local CSV fallback instead.
 
 ## Upstox integration
@@ -66,6 +67,8 @@ The client exposes:
 - V3 order placement
 
 The current official Upstox surface used here includes instrument metadata, historical candles, V3 market feed, option chain, and V3 order placement. Keep auth/token refresh and websocket lifecycle management in the live application layer around the provided adapters.
+
+For historical option backtests on expired contracts, the option engine uses Upstox's expired-instruments APIs for expiries, expired option contracts, and expired premium candles. Upstox documents those endpoints as part of the Plus plan, so historical options runs require account access to that API family.
 
 ## Project layout
 

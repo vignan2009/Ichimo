@@ -39,11 +39,13 @@ backtest:
   realistic_eod_time: "15:20"
 
 options:
-  enabled: false
+  enabled: true
   underlying: "NIFTY"
   strike_step: 50
   expiry_policy: "nearest"
-  slippage_bps: 5.0
+  slippage_bps: 10.0
+  lots: 1
+  allow_overnight: true
 
 upstox:
   access_token_env: "UPSTOX_ACCESS_TOKEN"

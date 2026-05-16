@@ -59,3 +59,43 @@ class UpstoxClient:
         response = requests.get(url, headers=self.headers, params={"instrument_key": instrument_key, "expiry_date": expiry_date}, timeout=self.config.timeout_seconds)
         response.raise_for_status()
         return response.json()
+
+    def option_contracts(self, instrument_key: str, expiry_date: str | None = None) -> dict[str, Any]:
+        url = f"{self.config.base_url}/v2/option/contract"
+        params = {"instrument_key": instrument_key}
+        if expiry_date is not None:
+            params["expiry_date"] = expiry_date
+        response = requests.get(url, headers=self.headers, params=params, timeout=self.config.timeout_seconds)
+        response.raise_for_status()
+        return response.json()
+
+    def expired_expiries(self, instrument_key: str) -> dict[str, Any]:
+        url = f"{self.config.base_url}/v2/expired-instruments/expiries"
+        response = requests.get(url, headers=self.headers, params={"instrument_key": instrument_key}, timeout=self.config.timeout_seconds)
+        response.raise_for_status()
+        return response.json()
+
+    def expired_option_contracts(self, instrument_key: str, expiry_date: str) -> dict[str, Any]:
+        url = f"{self.config.base_url}/v2/expired-instruments/option/contract"
+        response = requests.get(
+            url,
+            headers=self.headers,
+            params={"instrument_key": instrument_key, "expiry_date": expiry_date},
+            timeout=self.config.timeout_seconds,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def expired_historical_candles(
+        self,
+        expired_instrument_key: str,
+        interval: str,
+        to_date: str,
+        from_date: str,
+    ) -> dict[str, Any]:
+        encoded_key = quote(expired_instrument_key, safe="")
+        url = f"{self.config.base_url}/v2/expired-instruments/historical-candle/{encoded_key}/{interval}/{to_date}/{from_date}"
+        logger.info("Fetching expired historical candles for {}", expired_instrument_key)
+        response = requests.get(url, headers=self.headers, timeout=self.config.timeout_seconds)
+        response.raise_for_status()
+        return response.json()

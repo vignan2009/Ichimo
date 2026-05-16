@@ -7,6 +7,7 @@ from ichimoku_framework.analytics.dashboard import build_dashboard
 from ichimoku_framework.analytics.performance import summarize
 from ichimoku_framework.analytics.reporting import export_excel_report
 from ichimoku_framework.backtest.engine import BacktestEngine
+from ichimoku_framework.backtest.options import OvernightOptionBacktestEngine
 from ichimoku_framework.backtest.realistic import RealisticBacktestEngine
 from ichimoku_framework.config.models import AppConfig
 from ichimoku_framework.data.loaders import load_ohlc_csv, load_upstox_ohlc
@@ -33,6 +34,12 @@ def main() -> None:
     realistic = RealisticBacktestEngine(config.strategy, config.backtest).run(candles)
     realistic_summary = summarize(realistic.trades, realistic.equity_curve)
     print(realistic_summary)
+    option_result = None
+    option_summary = None
+    if config.options.enabled:
+        option_result = OvernightOptionBacktestEngine(config, UpstoxClient(config.upstox)).run(candles)
+        option_summary = summarize(option_result.trades, option_result.equity_curve)
+        print(option_summary)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     report_path = export_excel_report(
         Path("artifacts") / f"ichimoku_backtest_{timestamp}.xlsx",
@@ -41,6 +48,8 @@ def main() -> None:
         realistic,
         pine_summary,
         realistic_summary,
+        option_result,
+        option_summary,
     )
     print(f"Excel report written to {report_path}")
 

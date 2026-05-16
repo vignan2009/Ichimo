@@ -63,11 +63,13 @@ class BacktestConfig(BaseModel):
 
 
 class OptionsConfig(BaseModel):
-    enabled: bool = False
+    enabled: bool = True
     underlying: Literal["NIFTY", "BANKNIFTY", "FINNIFTY"] = "NIFTY"
     strike_step: int = 50
     expiry_policy: Literal["nearest"] = "nearest"
-    slippage_bps: float = 0.0
+    slippage_bps: float = 10.0
+    lots: int = 1
+    allow_overnight: bool = True
 
 
 class UpstoxConfig(BaseModel):

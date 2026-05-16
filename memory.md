@@ -8,6 +8,7 @@ Python framework for the Skyrexio Ichimoku Pine strategy with:
 
 - Pine-exact signal/backtest parity mode
 - Realistic execution mode inspired by the reference `nifty` project
+- Overnight ATM option backtest mode with premium-based PnL
 - Upstox V3 historical candle loading
 - Plotly dashboard output
 - Future live-execution structure for Upstox
@@ -20,6 +21,7 @@ All market-time assumptions are currently oriented around `Asia/Kolkata`.
 - `examples/run_backtest.py`: fetches data, runs both backtest modes, writes artifacts
 - `src/ichimoku_framework/backtest/engine.py`: Pine-exact engine
 - `src/ichimoku_framework/backtest/realistic.py`: delayed next-open realistic engine
+- `src/ichimoku_framework/backtest/options.py`: overnight option premium engine
 - `src/ichimoku_framework/analytics/`: summaries, dashboard, and reports
 - `src/ichimoku_framework/execution/upstox_client.py`: Upstox REST adapter
 
@@ -32,6 +34,7 @@ All market-time assumptions are currently oriented around `Asia/Kolkata`.
 - Current enabled ENTRY classes: strong bullish and strong bearish
 - Current enabled CLOSE classes: strong bullish and strong bearish
 - The Pine-exact engine preserves the original script's single long-style trade state even when bearish entry signals trigger
+- The option engine uses tradable direction: bullish signals buy ATM `CE`, bearish signals buy ATM `PE`
 - Current Pine-configured exits: `-2%` stop loss and `+5%` take profit
 
 ## Backtest Modes
@@ -46,6 +49,10 @@ All market-time assumptions are currently oriented around `Asia/Kolkata`.
   - no-new-entry cutoff
   - EOD flattening
   - this is the mode that matters more for deployment judgment
+- `OvernightOptionBacktestEngine`
+  - uses ATM option contracts and option premium OHLC
+  - allows overnight holds
+  - exits on close signal, premium SL/TP, or contract expiry
 
 ## Current Research Read
 
@@ -53,7 +60,7 @@ All market-time assumptions are currently oriented around `Asia/Kolkata`.
   - Pine-exact result was positive
   - realistic result was negative
 - The strategy is not yet validated.
-- Current tests are still on spot/index proxy data, not true futures or true option premium backtests.
+- Spot/index proxy tests are still useful for signal research, but the next execution read should come from the overnight option engine.
 
 ## Operational Notes
 
@@ -62,11 +69,12 @@ All market-time assumptions are currently oriented around `Asia/Kolkata`.
 - GitHub repo exists for deployment sync.
 - VPS setup is expected to create its own `.env`.
 - Upstox token expiry can break remote historical-data runs.
+- Expired option backtests depend on Upstox expired-instruments APIs, which are documented as Plus-plan endpoints.
 
 ## Next Priorities
 
 1. Keep Excel and dashboard reporting current for each backtest run.
-2. Add true futures and options backtesting instead of only spot-proxy research.
+2. Add true futures backtesting and validate the new overnight options path.
 3. Build longer-period validation and side-by-side execution comparisons.
 4. Add TradingView golden-master comparisons once exported reference signals are available.
 

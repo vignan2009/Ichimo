@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 
 import pandas as pd
 
@@ -9,6 +10,11 @@ from ichimoku_framework.config.models import ConditionMode, StrategyConfig
 class SignalDecision:
     triggered: bool
     values: tuple[bool, ...]
+
+
+class EntryDirection(str, Enum):
+    BULLISH = "bullish"
+    BEARISH = "bearish"
 
 
 def _reduce_conditions(conditions: list[bool], mode: ConditionMode) -> bool:
@@ -48,3 +54,18 @@ def close_decision(row: pd.Series, config: StrategyConfig) -> SignalDecision:
         {item.value for item in config.enabled_close_bearish_classes},
     )
     return SignalDecision(triggered=_reduce_conditions(list(values), config.close_condition_mode), values=values)
+
+
+def directional_entry(row: pd.Series, config: StrategyConfig) -> EntryDirection | None:
+    """Return the tradable direction implied by the enabled entry signal."""
+    bullish_classes = {item.value for item in config.enabled_entry_bullish_classes}
+    bearish_classes = {item.value for item in config.enabled_entry_bearish_classes}
+    bullish = row.get("entry_bullish_class")
+    bearish = row.get("entry_bearish_class")
+    bullish_value = None if pd.isna(bullish) else str(bullish)
+    bearish_value = None if pd.isna(bearish) else str(bearish)
+    if bullish_value in bullish_classes:
+        return EntryDirection.BULLISH
+    if bearish_value in bearish_classes:
+        return EntryDirection.BEARISH
+    return None

@@ -24,10 +24,20 @@ def trades_to_frame(trades: list[Trade], mode: str) -> pd.DataFrame:
     return excel_safe_frame(pd.DataFrame(rows))
 
 
-def summary_to_frame(pine_summary: PerformanceSummary, realistic_summary: PerformanceSummary) -> pd.DataFrame:
-    """Return a two-row comparison table for the two execution modes."""
+def summary_to_frame(
+    pine_summary: PerformanceSummary,
+    realistic_summary: PerformanceSummary,
+    option_summary: PerformanceSummary | None = None,
+) -> pd.DataFrame:
+    """Return a comparison table for the configured execution modes."""
     rows = []
-    for mode, summary in (("pine_exact", pine_summary), ("realistic", realistic_summary)):
+    summaries: list[tuple[str, PerformanceSummary]] = [
+        ("pine_exact", pine_summary),
+        ("realistic", realistic_summary),
+    ]
+    if option_summary is not None:
+        summaries.append(("overnight_options", option_summary))
+    for mode, summary in summaries:
         row = asdict(summary)
         row["mode"] = mode
         distribution = row.pop("trade_distribution")
@@ -36,15 +46,19 @@ def summary_to_frame(pine_summary: PerformanceSummary, realistic_summary: Perfor
     return pd.DataFrame(rows).set_index("mode").reset_index()
 
 
-def equity_to_frame(pine_result: BacktestResult, realistic_result: BacktestResult) -> pd.DataFrame:
-    """Align both equity curves by timestamp for export."""
-    frame = pd.concat(
-        [
-            pine_result.equity_curve.rename("pine_exact_equity"),
-            realistic_result.equity_curve.rename("realistic_equity"),
-        ],
-        axis=1,
-    ).reset_index(names="timestamp")
+def equity_to_frame(
+    pine_result: BacktestResult,
+    realistic_result: BacktestResult,
+    option_result: BacktestResult | None = None,
+) -> pd.DataFrame:
+    """Align available equity curves by timestamp for export."""
+    curves = [
+        pine_result.equity_curve.rename("pine_exact_equity"),
+        realistic_result.equity_curve.rename("realistic_equity"),
+    ]
+    if option_result is not None:
+        curves.append(option_result.equity_curve.rename("overnight_options_equity"))
+    frame = pd.concat(curves, axis=1).reset_index(names="timestamp")
     return excel_safe_frame(frame)
 
 
@@ -60,16 +74,12 @@ def daily_pnl_frame(trades: pd.DataFrame) -> pd.DataFrame:
 def monthly_returns_frame(equity: pd.DataFrame) -> pd.DataFrame:
     """Compute monthly equity returns for each execution mode."""
     if equity.empty:
-        return pd.DataFrame(columns=["month", "pine_exact_return", "realistic_return"])
+        return pd.DataFrame(columns=["month", "pine_exact_return", "realistic_return", "overnight_options_return"])
     frame = equity.copy()
     frame["timestamp"] = pd.to_datetime(frame["timestamp"])
-    monthly = frame.set_index("timestamp")[["pine_exact_equity", "realistic_equity"]].resample("ME").last().pct_change().dropna(how="all")
-    monthly = monthly.rename(
-        columns={
-            "pine_exact_equity": "pine_exact_return",
-            "realistic_equity": "realistic_return",
-        }
-    )
+    equity_columns = [column for column in frame.columns if column.endswith("_equity")]
+    monthly = frame.set_index("timestamp")[equity_columns].resample("ME").last().pct_change().dropna(how="all")
+    monthly = monthly.rename(columns={column: column.replace("_equity", "_return") for column in equity_columns})
     return monthly.reset_index(names="month")
 
 
@@ -115,6 +125,8 @@ def export_excel_report(
     realistic_result: BacktestResult,
     pine_summary: PerformanceSummary,
     realistic_summary: PerformanceSummary,
+    option_result: BacktestResult | None = None,
+    option_summary: PerformanceSummary | None = None,
 ) -> Path:
     """Write a multi-sheet Excel report for a complete backtest run."""
     output = Path(path)
@@ -122,13 +134,16 @@ def export_excel_report(
 
     pine_trades = trades_to_frame(pine_result.trades, "pine_exact")
     realistic_trades = trades_to_frame(realistic_result.trades, "realistic")
-    all_trades = pd.concat([pine_trades, realistic_trades], ignore_index=True)
-    equity = equity_to_frame(pine_result, realistic_result)
+    option_trades = trades_to_frame(option_result.trades, "overnight_options") if option_result is not None else pd.DataFrame()
+    all_trades = pd.concat([pine_trades, realistic_trades, option_trades], ignore_index=True)
+    equity = equity_to_frame(pine_result, realistic_result, option_result)
 
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        excel_safe_frame(summary_to_frame(pine_summary, realistic_summary)).to_excel(writer, sheet_name="Summary", index=False)
+        excel_safe_frame(summary_to_frame(pine_summary, realistic_summary, option_summary)).to_excel(writer, sheet_name="Summary", index=False)
         excel_safe_frame(pine_trades).to_excel(writer, sheet_name="Trades_PineExact", index=False)
         excel_safe_frame(realistic_trades).to_excel(writer, sheet_name="Trades_Realistic", index=False)
+        if option_result is not None:
+            excel_safe_frame(option_trades).to_excel(writer, sheet_name="Trades_OvernightOptions", index=False)
         excel_safe_frame(daily_pnl_frame(all_trades)).to_excel(writer, sheet_name="Daily_PnL", index=False)
         excel_safe_frame(monthly_returns_frame(equity)).to_excel(writer, sheet_name="Monthly_Returns", index=False)
         excel_safe_frame(equity).to_excel(writer, sheet_name="Equity_Curves", index=False)
